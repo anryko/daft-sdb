@@ -9,6 +9,8 @@
 #include <sys/wait.h>
 #include <string.h>
 
+#include "utils.c"
+
 typedef enum {
     PROCESS_RUNNING,
     PROCESS_STOPPED,
@@ -158,6 +160,12 @@ int main(int argc, char *argv[]) {
     } else {
         fprintf(stderr, "Usage: %s [<program>|-p <pid>]\n", argv[0]);
         return 1;
+    }
+
+    char *line = nullptr;
+    while ((line = readline("sdb> ")) != nullptr) {
+        printf("%s\n", line);
+        free(line);
     }
 
     ProcResult result;

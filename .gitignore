@@ -2,3 +2,4 @@ nob
 *.old
 build/
 compile_commands.json
+.cache
