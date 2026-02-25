@@ -162,10 +162,26 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    History h = {0};
     char *line = nullptr;
+
     while ((line = readline("sdb> ")) != nullptr) {
-        printf("%s\n", line);
+        const char *cmd = line;
+
+        if (cmd[0] == '\0') {
+            if (h.count > 0) {
+                cmd = history_last(&h);
+            }
+        } else {
+            char *copy = strdup(cmd);
+            if (copy != nullptr) {
+                history_append(&h, copy);
+            }
+        }
+
+        printf("%s\n", cmd);
         free(line);
+        // history_free(&h);
     }
 
     ProcResult result;
