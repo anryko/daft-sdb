@@ -4,6 +4,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "proc.c"
+
 #define LINE_LEN_MAX 256
 #define DA_INIT_CAP 256
 #define DECLTYPE_CAST(T)
@@ -50,11 +52,20 @@ typedef struct {
     char **items;
     size_t count;
     size_t capacity;
-} History;
+} StrArr;
 
-#define history_append(hp, s) da_append((hp), (s))
-#define history_last(hp) ((hp)->items[(hp)->count - 1])
-#define history_free(hp) da_free_with(char*, (hp), free)
+#define sa_append(sa, s) da_append((sa), (s))
+#define sa_last(sa) ((sa)->items[(sa)->count - 1])
+#define sa_free(sa) da_free_with(char*, (sa), free)
+
+#define History StrArr
+#define history_append(hp, s) sa_append(hp, s)
+#define history_last(hp) sa_last(hp)
+#define history_free(hp) sa_free(hp)
+
+#define Cmd StrArr
+#define cmd_append(hp, s) sa_append(hp, s)
+#define cmd_free(hp) sa_free(hp)
 
 
 char *readline(const char *prompt)
@@ -78,4 +89,37 @@ char *readline(const char *prompt)
 
     memcpy(p, line, n + 1);
     return p;
+}
+
+
+bool is_prefix(const char prefix[static 1], const char line[static 1])
+{
+    size_t i = 0;
+    while (prefix[i] != '\0' && line[i] != '\0') {
+        if (prefix[i] != line[i]) return false;
+        i++;
+    }
+
+    return true;
+}
+
+void handle_command(Proc *proc, const char line[static 1])
+{
+    Cmd cmd = {0};
+    char *copy = strdup(line);
+
+    char *p = nullptr;
+    char *tok = strtok_r(copy, " ", &p);
+
+    while (tok != nullptr) {
+        cmd_append(&cmd, tok);
+        tok = strtok_r(nullptr, " ", &p);
+    }
+
+    if (is_prefix(cmd.items[0], "continue")) {
+        printf("command: %s\n", cmd.items[0]);
+        proc_resume(proc);
+    }
+
+    cmd_free(&cmd);
 }
