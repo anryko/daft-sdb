@@ -1,7 +1,9 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
 #include <errno.h>
 #include <sys/ptrace.h>
 #include <sys/types.h>
@@ -43,6 +45,26 @@ static ProcResult proc_stop_reason_from_status(int status) {
     }
 
     return result;
+}
+
+void proc_result_print(Proc *proc, ProcResult *result)
+{
+    printf("Process %d ", proc->pid);
+    switch (result->state) {
+        case PROCESS_EXITED:
+            printf("exited with status %d", result->info);
+            break;
+        case PROCESS_TERMINATED:
+            printf("terminated with signal %s", sigabbrev_np(result->info));
+            break;
+        case PROCESS_STOPPED:
+            printf("stoped with signal %s", sigabbrev_np(result->info));
+            break;
+        case PROCESS_RUNNING:
+            printf("is running");
+            break;
+    }
+    printf("\n");
 }
 
 // Blocking wait

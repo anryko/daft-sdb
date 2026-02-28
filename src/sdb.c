@@ -3,36 +3,42 @@
 
 #include "utils.c"
 
-int main(int argc, char *argv[]) {
-    Proc proc;
+Proc *attach(int argc, char *argv[])
+{
+    Proc *proc = malloc(sizeof(Proc));
 
     if (argc == 3 && strcmp(argv[1], "-p") == 0) {
         pid_t pid = (pid_t) strtol(argv[2], NULL, 10);
         if (pid <= 0) {
             fprintf(stderr, "Invalid PID: %s\n", argv[2]);
-            return 1;
+            return nullptr;
         }
 
-        if (!proc_attach(&proc, pid)) {
+        if (!proc_attach(proc, pid)) {
             perror("Failed to attach");
-            return 1;
+            return nullptr;
         }
 
-        printf("Attached to PID %d\n", proc.pid);
+        printf("Attached to PID %d\n", proc->pid);
 
     } else if (argc == 2) {
-        if (!proc_launch(&proc, argv[1])) {
+        if (!proc_launch(proc, argv[1])) {
             perror("Failed to launch program");
-            return 1;
+            return nullptr;
         }
 
-        printf("Launched PID %d\n", proc.pid);
+        printf("Launched PID %d\n", proc->pid);
 
     } else {
         fprintf(stderr, "Usage: %s [<program>|-p <pid>]\n", argv[0]);
-        return 1;
+        return nullptr;
     }
 
+    return proc;
+}
+
+void main_loop(Proc *proc)
+{
     History h = {0};
     char *line = nullptr;
 
@@ -50,32 +56,23 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        handle_command(&proc, cmd);
+        if (cmd[0] != '\0') {
+            handle_command(proc, cmd);
+        }
+
         free(line);
     }
 
-    ProcResult result;
-    do {
-        result = proc_wait(&proc);
-
-        if (result.state == PROCESS_STOPPED) {
-            printf("Process stopped by signal %d, resuming...\n", result.info);
-            if (proc_resume(&proc) != 0) {
-                perror("Failed to resume process");
-                break;
-            }
-        } else if (result.state == PROCESS_TERMINATED) {
-            fprintf(stderr, "Error waiting for process: %d\n", result.info);
-            break;
-        }
-
-        // small sleep to avoid busy-waiting
-        usleep(10000); // 10ms
-    } while (result.state != PROCESS_EXITED && result.state != PROCESS_TERMINATED);
-
-    printf("Process exited with info %d\n", result.info);
-
-    proc_destroy(&proc);
     history_free(&h);
+}
+
+int main(int argc, char *argv[]) {
+
+    auto proc = attach(argc, argv);
+    if (!proc) return 1;
+
+    main_loop(proc);
+
+    proc_destroy(proc);
     return 0;
 }

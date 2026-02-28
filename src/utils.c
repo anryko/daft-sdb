@@ -119,6 +119,8 @@ void handle_command(Proc *proc, const char line[static 1])
     if (is_prefix(cmd.items[0], "continue")) {
         printf("command: %s\n", cmd.items[0]);
         proc_resume(proc);
+        auto reason = proc_wait(proc);
+        proc_result_print(proc, &reason);
     }
 
     cmd_free(&cmd);
